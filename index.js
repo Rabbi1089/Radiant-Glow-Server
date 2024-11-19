@@ -35,11 +35,18 @@ async function run() {
  
 
     const serviceCollection = client.db("Radiant-Glow").collection("services");
+    const bookingCollection = client.db("Radiant-Glow").collection("booking");
 
     app.post('/services' ,async (req, res ) => {
       const service = req.body;
       console.log(service);
       const result = await serviceCollection.insertOne(service)
+      res.send(result)
+    })
+    app.post('/booking' ,async (req, res ) => {
+      const service = req.body;
+      console.log(service);
+      const result = await bookingCollection.insertOne(service)
       res.send(result)
     })
 
