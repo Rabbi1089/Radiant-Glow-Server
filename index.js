@@ -3,6 +3,8 @@ const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const app = express();
+const cookieParser = require("cookie-parser");
+const jwt = require("jsonwebtoken");
 const port = process.env.PORT || 5000;
 
 //middleware
@@ -13,8 +15,7 @@ app.use(
   })
 );
 app.use(express.json());
-
-console.log(process.env.DB_Pass);
+app.use(cookieParser());
 
 const uri = `mongodb+srv://${process.env.DB_User}:${process.env.DB_Pass}@cluster0.t241ufd.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -34,6 +35,22 @@ async function run() {
 
     const serviceCollection = client.db("Radiant-Glow").collection("services");
     const bookingCollection = client.db("Radiant-Glow").collection("booking");
+
+    //auth related api
+    app.post("/jwt", async (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "365d",
+      });
+      console.log(token);
+      res
+        .cookie("token", token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+        })
+        .send({ success: true });
+    });
 
     app.post("/services", async (req, res) => {
       const service = req.body;
@@ -71,7 +88,7 @@ async function run() {
       const email = req.params.email;
       let query = {};
       if (req?.query?.email) {
-        query = { "serviceProvider.serviceProvideremail" : req.query.email };
+        query = { "serviceProvider.serviceProvideremail": req.query.email };
       }
       console.log(query);
       const result = await serviceCollection.find(query).toArray();
