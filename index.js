@@ -42,7 +42,7 @@ async function run() {
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
         expiresIn: "365d",
       });
-      console.log(token);
+     
       res
         .cookie("token", token, {
           httpOnly: true,
@@ -72,6 +72,18 @@ async function run() {
       
     }
 
+        // Clear token on logout
+        app.get('/logout', (req, res) => {
+          res
+            .clearCookie('token', {
+              httpOnly: true,
+              secure: process.env.NODE_ENV === 'production',
+              sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+              maxAge: 0,
+            })
+            .send({ success: true })
+        })
+
     app.post("/services", async (req, res) => {
       const service = req.body;
       console.log(service);
@@ -89,6 +101,7 @@ async function run() {
     app.get("/services", async (req, res) => {
       const result = await serviceCollection.find().toArray();
       res.send(result);
+      console.log(result);
     });
 
     // Get all jobs data from db
