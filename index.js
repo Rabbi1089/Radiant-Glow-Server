@@ -42,7 +42,7 @@ async function run() {
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
         expiresIn: "365d",
       });
-     
+
       res
         .cookie("token", token, {
           httpOnly: true,
@@ -52,37 +52,36 @@ async function run() {
         .send({ success: true });
     });
 
-//verifyToken
-    const verifyToken = (req, res , next) =>{
+    //verifyToken
+    const verifyToken = (req, res, next) => {
       const token = req.cookies.token;
-      if (!token ) {
-        return res.status(401).send("unauthorized access")
+      if (!token) {
+        return res.status(401).send("unauthorized access");
       }
       console.log(token);
       if (token) {
-        jwt.verify(token , process.env.ACCESS_TOKEN_SECRET , (err , decoded) => {
-            if (err) {
-              return res.status(401).send("unauthorized access")
-            }
-            console.log(decoded);
-            req.user = decoded;
-            next()
-        })
+        jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+          if (err) {
+            return res.status(401).send("unauthorized access");
+          }
+          console.log(decoded);
+          req.user = decoded;
+          next();
+        });
       }
-      
-    }
+    };
 
-        // Clear token on logout
-        app.get('/logout', (req, res) => {
-          res
-            .clearCookie('token', {
-              httpOnly: true,
-              secure: process.env.NODE_ENV === 'production',
-              sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-              maxAge: 0,
-            })
-            .send({ success: true })
+    // Clear token on logout
+    app.get("/logout", (req, res) => {
+      res
+        .clearCookie("token", {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+          maxAge: 0,
         })
+        .send({ success: true });
+    });
 
     app.post("/services", async (req, res) => {
       const service = req.body;
@@ -117,9 +116,9 @@ async function run() {
       res.send(result);
     });
     // get all jobs posted by a specific user
-    app.get("/myService", verifyToken ,async (req, res) => {
+    app.get("/myService", verifyToken, async (req, res) => {
       const email = req.params.email;
-      console.log('token' , req.cookies.token);
+      console.log("token", req.cookies.token);
       let query = {};
       if (req?.query?.email) {
         query = { "serviceProvider.serviceProvideremail": req.query.email };
@@ -128,6 +127,24 @@ async function run() {
       const result = await serviceCollection.find(query).toArray();
       res.send(result);
     });
+
+    // update a service in db
+    app.put("/update/:id", async (req, res) => {
+      const id = req.params.id;
+      const updateService = req.body;
+      console.log(updateService);
+      const query = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+          ...updateService,
+        },
+      };
+      const result = await serviceCollection.updateOne(query, updateDoc, options);
+      console.log(result);
+      res.send(result);
+    });
+
     // Send a ping to confirm a successful connection
     //   await client.db("admin").command({ ping: 1 });
     console.log(
