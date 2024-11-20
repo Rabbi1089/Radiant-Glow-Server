@@ -52,6 +52,26 @@ async function run() {
         .send({ success: true });
     });
 
+//verifyToken
+    const verifyToken = (req, res , next) =>{
+      const token = req.cookies.token;
+      if (!token ) {
+        return res.status(401).send("unauthorized access")
+      }
+      console.log(token);
+      if (token) {
+        jwt.verify(token , process.env.ACCESS_TOKEN_SECRET , (err , decoded) => {
+            if (err) {
+              return res.status(401).send("unauthorized access")
+            }
+            console.log(decoded);
+            req.user = decoded;
+            next()
+        })
+      }
+      
+    }
+
     app.post("/services", async (req, res) => {
       const service = req.body;
       console.log(service);
@@ -84,8 +104,9 @@ async function run() {
       res.send(result);
     });
     // get all jobs posted by a specific user
-    app.get("/myService", async (req, res) => {
+    app.get("/myService", verifyToken ,async (req, res) => {
       const email = req.params.email;
+      console.log('token' , req.cookies.token);
       let query = {};
       if (req?.query?.email) {
         query = { "serviceProvider.serviceProvideremail": req.query.email };
