@@ -64,7 +64,7 @@ async function run() {
           if (err) {
             return res.status(401).send("unauthorized access");
           }
-          console.log(decoded);
+          
           req.user = decoded;
           next();
         });
@@ -85,13 +85,13 @@ async function run() {
 
     app.post("/services", async (req, res) => {
       const service = req.body;
-      console.log(service);
+
       const result = await serviceCollection.insertOne(service);
       res.send(result);
     });
     app.post("/booking", async (req, res) => {
       const service = req.body;
-      console.log(service);
+ 
       const result = await bookingCollection.insertOne(service);
       res.send(result);
     });
@@ -100,7 +100,7 @@ async function run() {
     app.get("/services", async (req, res) => {
       const result = await serviceCollection.find().toArray();
       res.send(result);
-      console.log(result);
+
     });
 
     // Get all jobs data from db
@@ -118,7 +118,6 @@ async function run() {
     // get all jobs posted by a specific user
     app.get("/myService", verifyToken, async (req, res) => {
       const email = req.params.email;
-      console.log("token", req.cookies.token);
       let query = {};
       if (req?.query?.email) {
         query = { "serviceProvider.serviceProvideremail": req.query.email };
@@ -127,6 +126,18 @@ async function run() {
       const result = await serviceCollection.find(query).toArray();
       res.send(result);
     });
+
+    //booked service
+    app.get('/bookedService' , verifyToken,async (req, res) => {
+      const email = req.params.email;
+      let query = {};
+      if (req?.query?.email) {
+        query = { "client.cEmail": req.query.email };
+      }
+      console.log(query);
+      const result = await bookingCollection.find(query).toArray();
+      res.send(result);
+    })
 
     // update a service in db
     app.put("/update/:id", async (req, res) => {
