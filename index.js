@@ -8,12 +8,18 @@ const jwt = require("jsonwebtoken");
 const port = process.env.PORT || 5000;
 
 //middleware
-app.use(
-  cors({
-    origin: ["http://localhost:5173"],
-    credentials: true,
-  })
-);
+const corsOptions = {
+  origin: [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'https://radiant-glow-73fe4.web.app',
+    'radiant-glow-73fe4.firebaseapp.com',
+  ],
+  credentials: true,
+  optionSuccessStatus: 200,
+}
+
+app.use(cors(corsOptions))
 app.use(express.json());
 app.use(cookieParser());
 
@@ -31,7 +37,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+  
 
     const serviceCollection = client.db("Radiant-Glow").collection("services");
     const bookingCollection = client.db("Radiant-Glow").collection("booking");
@@ -58,15 +64,15 @@ async function run() {
       if (!token) {
         return res.status(401).send("unauthorized access");
       }
-     // console.log(token);
+      // console.log(token);
       if (token) {
         jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
           if (err) {
             return res.status(401).send("unauthorized access");
           }
-          
+
           req.user = decoded;
-          console.log('value of token' , decoded);
+          console.log("value of token", decoded);
           next();
         });
       }
@@ -92,7 +98,7 @@ async function run() {
     });
     app.post("/booking", async (req, res) => {
       const service = req.body;
- 
+
       const result = await bookingCollection.insertOne(service);
       res.send(result);
     });
@@ -101,7 +107,6 @@ async function run() {
     app.get("/services", async (req, res) => {
       const result = await serviceCollection.find().toArray();
       res.send(result);
-
     });
 
     // Get all jobs data from db
@@ -118,11 +123,11 @@ async function run() {
     });
     // get all jobs posted by a specific user
     app.get("/myService", verifyToken, async (req, res) => {
-      const Cqemail = (req.user.email).toLowerCase()
-      const Ctemail = (req.query.email).toLowerCase()
-      console.log('email holder from qury' , Cqemail , Ctemail);
+      const Cqemail = req.user.email.toLowerCase();
+      const Ctemail = req.query.email.toLowerCase();
+      console.log("email holder from qury", Cqemail, Ctemail);
       if (Cqemail != Ctemail) {
-        return res.status(403).send("forbidden access")
+        return res.status(403).send("forbidden access");
       }
       let query = {};
       if (req?.query?.email) {
@@ -134,51 +139,56 @@ async function run() {
     });
 
     //booked service
-    app.get('/bookedService' , verifyToken, async (req, res) => {
-      const Cqemail = (req.user.email).toLowerCase()
-      const Ctemail = (req.query.email).toLowerCase()
-      console.log('email holder from booked service' , Cqemail , Ctemail);
+    app.get("/bookedService", verifyToken, async (req, res) => {
+      const Cqemail = req.user.email.toLowerCase();
+      const Ctemail = req.query.email.toLowerCase();
+      console.log("email holder from booked service", Cqemail, Ctemail);
       if (Cqemail != Ctemail) {
-        return res.status(403).send("forbidden access")
+        return res.status(403).send("forbidden access");
       }
       let query = {};
       if (req?.query?.email) {
         query = { "client.cEmail": req.query.email };
       }
-      
+
       const result = await bookingCollection.find(query).toArray();
       res.send(result);
-    })
+    });
 
     // service to do
-    app.get('/serviceToDo', verifyToken, async (req, res) => {
-      const email = req.params.email;
-      const filter = req.query.filter
-      console.log('from booked service' ,email, filter);
+    app.get("/serviceToDo", verifyToken, async (req, res) => {
+      const email = req.query.email;
+      const filter = req.query.filter;
+      const search = req.query.search;
+      console.log("from serviceToDo", email, filter, search);
       let query = {};
       if (req?.query?.email) {
-        query = {"serviceProvideremail": req.query.email,
-         
-         }
-        
+        query = {
+          sName: {
+            $regex: search,
+            $options: "i",
+          },
+          serviceProvideremail: req.query.email,
+          status: filter,
+        };
       }
-      console.log('ser to do ',query);
+      console.log("ser to do ", query);
       const result = await bookingCollection.find(query).toArray();
       res.send(result);
-    })
+    });
 
-     //update bid status
+    //update bid status
 
-     app.patch('/serviceToDo/:id', async(req , res ) => {
+    app.patch("/serviceToDo/:id", async (req, res) => {
       const id = req.params.id;
       const status = req.body;
-      const query = { _id : new ObjectId(id)}
+      const query = { _id: new ObjectId(id) };
       const updateDoc = {
-        $set : status
-      }
-      const result = await bookingCollection.updateOne(query , updateDoc)
-    res.send(result)
-    })
+        $set: status,
+      };
+      const result = await bookingCollection.updateOne(query, updateDoc);
+      res.send(result);
+    });
 
     // update a service in db
     app.put("/update/:id", async (req, res) => {
@@ -192,21 +202,24 @@ async function run() {
           ...updateService,
         },
       };
-      const result = await serviceCollection.updateOne(query, updateDoc, options);
+      const result = await serviceCollection.updateOne(
+        query,
+        updateDoc,
+        options
+      );
       console.log(result);
       res.send(result);
     });
 
-        //== delete a service data from db
-        app.delete('/delete/:id', async (req, res) => {
-          const id = req.params.id;
-          console.log(id);
-          const query = { _id: new ObjectId(id) };
-          const result = await serviceCollection.deleteOne(query);
-          console.log(result);
-          res.send(result);
-        });
-    
+    //== delete a service data from db
+    app.delete("/delete/:id", async (req, res) => {
+      const id = req.params.id;
+      console.log(id);
+      const query = { _id: new ObjectId(id) };
+      const result = await serviceCollection.deleteOne(query);
+      console.log(result);
+      res.send(result);
+    });
 
     // Send a ping to confirm a successful connection
     //   await client.db("admin").command({ ping: 1 });
