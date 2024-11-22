@@ -58,7 +58,7 @@ async function run() {
       if (!token) {
         return res.status(401).send("unauthorized access");
       }
-      console.log(token);
+     // console.log(token);
       if (token) {
         jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
           if (err) {
@@ -130,13 +130,44 @@ async function run() {
     //booked service
     app.get('/bookedService' , verifyToken,async (req, res) => {
       const email = req.params.email;
+      console.log('from booked service' , email);
       let query = {};
       if (req?.query?.email) {
         query = { "client.cEmail": req.query.email };
       }
-      console.log(query);
+      
       const result = await bookingCollection.find(query).toArray();
       res.send(result);
+    })
+
+    // service to do
+    app.get('/serviceToDo', verifyToken, async (req, res) => {
+      const email = req.params.email;
+      const filter = req.query.filter
+      console.log('from booked service' ,email, filter);
+      let query = {};
+      if (req?.query?.email) {
+        query = {"serviceProvideremail": req.query.email,
+         
+         }
+        
+      }
+      console.log('ser to do ',query);
+      const result = await bookingCollection.find(query).toArray();
+      res.send(result);
+    })
+
+     //update bid status
+
+     app.patch('/serviceToDo/:id', async(req , res ) => {
+      const id = req.params.id;
+      const status = req.body;
+      const query = { _id : new ObjectId(id)}
+      const updateDoc = {
+        $set : status
+      }
+      const result = await bookingCollection.updateOne(query , updateDoc)
+    res.send(result)
     })
 
     // update a service in db
