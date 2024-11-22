@@ -66,6 +66,7 @@ async function run() {
           }
           
           req.user = decoded;
+          console.log('value of token' , decoded);
           next();
         });
       }
@@ -117,7 +118,12 @@ async function run() {
     });
     // get all jobs posted by a specific user
     app.get("/myService", verifyToken, async (req, res) => {
-      const email = req.params.email;
+      const Cqemail = (req.user.email).toLowerCase()
+      const Ctemail = (req.query.email).toLowerCase()
+      console.log('email holder from qury' , Cqemail , Ctemail);
+      if (Cqemail != Ctemail) {
+        return res.status(403).send("forbidden access")
+      }
       let query = {};
       if (req?.query?.email) {
         query = { "serviceProvider.serviceProvideremail": req.query.email };
@@ -128,9 +134,13 @@ async function run() {
     });
 
     //booked service
-    app.get('/bookedService' , verifyToken,async (req, res) => {
-      const email = req.params.email;
-      console.log('from booked service' , email);
+    app.get('/bookedService' , verifyToken, async (req, res) => {
+      const Cqemail = (req.user.email).toLowerCase()
+      const Ctemail = (req.query.email).toLowerCase()
+      console.log('email holder from booked service' , Cqemail , Ctemail);
+      if (Cqemail != Ctemail) {
+        return res.status(403).send("forbidden access")
+      }
       let query = {};
       if (req?.query?.email) {
         query = { "client.cEmail": req.query.email };
